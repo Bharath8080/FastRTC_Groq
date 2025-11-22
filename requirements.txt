@@ -9,4 +9,5 @@ loguru>=0.7.3
 gradio
 python-dotenv
 tavily-python
+langchain-tavily
 soundfile
