@@ -1,35 +1,31 @@
-# Read the doc: https://huggingface.co/docs/hub/spaces-sdks-docker
-# Dockerfile for FastRTC Groq Voice Agent
-
-FROM python:3.11-slim
-
-# Create user
-RUN useradd -m -u 1000 user
-USER user
-
-# Set environment variables
-ENV PATH="/home/user/.local/bin:$PATH"
-ENV PYTHONUNBUFFERED=1
+# Use Python 3.10 slim base image
+FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY --chown=user ./requirements.txt requirements.txt
+# Environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy application files
-COPY --chown=user ./src /app/src
-COPY --chown=user ./.env.example /app/.env.example
+# Copy requirement file and install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose port 7860 (required by Hugging Face Spaces)
+# Copy the whole project
+COPY . .
+
+# Create non-root user
+RUN useradd -m appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Expose Gradio default port
 EXPOSE 7860
 
-# Set working directory to src
-WORKDIR /app/src
-
-# Run the application
-CMD ["python", "app.py"]
+# CMD to run Gradio app
+CMD ["python", "src/app.py"]
